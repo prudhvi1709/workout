@@ -24,13 +24,13 @@
         <!-- Action Buttons -->
         <div class="row mb-3">
             <div class="col">
-                <button class="btn btn-primary btn-sm me-2" onclick="loadData()">
+                <button class="btn btn-primary btn-sm me-2" data-action="refresh">
                     &#8635; Refresh
                 </button>
-                <button class="btn btn-success btn-sm me-2" onclick="exportToCSV()">
+                <button class="btn btn-success btn-sm me-2" data-action="export-csv">
                     &#8681; Export CSV
                 </button>
-                <button class="btn btn-warning btn-sm" onclick="clearHistory()">
+                <button class="btn btn-warning btn-sm" data-action="clear-history">
                     &#128465; Clear History
                 </button>
             </div>
@@ -70,9 +70,23 @@
                     <h5>Today: <span id="currentDate" class="badge bg-primary"></span></h5>
                 </div>
 
+                <!-- Week Selection -->
+                <div id="weekSelector" class="mb-4">
+                    <h5 class="mb-3">Select Your Week</h5>
+                    <div class="d-grid gap-2" id="weekButtons"></div>
+                </div>
+
                 <!-- Day Selection -->
-                <div id="daySelector" class="mb-4">
-                    <h5 class="mb-3">Which day are you doing today?</h5>
+                <div id="daySelector" class="mb-4 d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <span class="badge bg-info" id="selectedWeekName"></span>
+                            <span class="ms-2">Select Your Day</span>
+                        </h5>
+                        <button class="btn btn-secondary btn-sm" data-action="change-week">
+                            Change Week
+                        </button>
+                    </div>
                     <div class="d-grid gap-2" id="dayButtons"></div>
                 </div>
 
@@ -80,15 +94,16 @@
                 <div id="selectedDay" class="d-none">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">
-                            <span class="badge bg-success" id="selectedDayName"></span>
+                            <span class="badge bg-info" id="selectedWeekDisplay"></span>
+                            <span class="badge bg-success ms-2" id="selectedDayName"></span>
                         </h5>
-                        <button class="btn btn-secondary btn-sm" onclick="changeDaySelection()">
+                        <button class="btn btn-secondary btn-sm" data-action="change-day">
                             Change Day
                         </button>
                     </div>
                     <div id="workoutTable" class="table-responsive"></div>
                     <div class="mt-3">
-                        <button class="btn btn-primary" onclick="saveWorkoutSession()">
+                        <button class="btn btn-primary" data-action="save-session">
                             Save Session
                         </button>
                     </div>
@@ -107,10 +122,10 @@
             <div class="tab-pane fade" id="history" role="tabpanel">
                 <div class="mb-3">
                     <p class="text-muted">View all your completed workouts and diet entries</p>
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-sm btn-outline-primary active" onclick="filterHistory('all')">All</button>
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="filterHistory('workout')">Workouts</button>
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="filterHistory('diet')">Diet</button>
+                    <div class="btn-group" role="group" id="historyFilterButtons">
+                        <button type="button" class="btn btn-sm btn-outline-primary active" data-filter="all">All</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-filter="workout">Workouts</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-filter="diet">Diet</button>
                     </div>
                 </div>
                 <div id="historyTable" class="table-responsive"></div>
@@ -123,18 +138,75 @@
 
     <script>
         // Global variables
-        let workoutData = {};  // { 'Day 1 - Push': [...exercises], 'Day 2 - Legs': [...] }
+        let workoutData = {};  // { 'Week 1': { 'Day 1': { focus: 'Upper Push', exercises: [...] } } }
         let dietData = {};     // { 'Lunch': [...options], 'Dinner': [...] }
         let completionLog = [];
+        let selectedWeek = null;
         let selectedWorkoutDay = null;
         let currentHistoryFilter = 'all';
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', () => {
             loadCompletionLog();
             displayCurrentDate();
             loadData();
+            setupEventListeners();
         });
+
+        // Setup all event listeners using event delegation
+        function setupEventListeners() {
+            // Main action buttons
+            document.addEventListener('click', (e) => {
+                const action = e.target.closest('[data-action]')?.dataset.action;
+                
+                switch(action) {
+                    case 'refresh':
+                        loadData();
+                        break;
+                    case 'export-csv':
+                        exportToCSV();
+                        break;
+                    case 'clear-history':
+                        clearHistory();
+                        break;
+                    case 'change-week':
+                        changeWeekSelection();
+                        break;
+                    case 'change-day':
+                        changeDaySelection();
+                        break;
+                    case 'save-session':
+                        saveWorkoutSession();
+                        break;
+                }
+
+                // Week selection
+                const week = e.target.closest('[data-week]')?.dataset.week;
+                if (week) {
+                    selectWeek(week);
+                }
+
+                // Day selection
+                const day = e.target.closest('[data-day]')?.dataset.day;
+                if (day) {
+                    selectDay(day);
+                }
+
+                // History filter
+                const filter = e.target.closest('[data-filter]')?.dataset.filter;
+                if (filter) {
+                    filterHistory(filter, e.target);
+                }
+            });
+
+            // Diet checkbox changes
+            document.addEventListener('change', (e) => {
+                if (e.target.matches('[data-diet-checkbox]')) {
+                    const { meal, option, protein, uniqueId } = e.target.dataset;
+                    markDietComplete(meal, option, protein, e.target, uniqueId);
+                }
+            });
+        }
 
         // Display current date
         function displayCurrentDate() {
@@ -156,12 +228,12 @@
 
                 // Fetch both Excel files
                 const [workoutResponse, dietResponse] = await Promise.all([
-                    fetch('workout.xlsx'),
+                    fetch('Prudhvi_4Week_Progressive_Workout.xlsx'),
                     fetch('diet.xlsx')
                 ]);
 
                 if (!workoutResponse.ok || !dietResponse.ok) {
-                    throw new Error('Failed to fetch Excel files. Make sure workout.xlsx and diet.xlsx are in the same directory.');
+                    throw new Error('Failed to fetch Excel files. Make sure Prudhvi_4Week_Progressive_Workout.xlsx and diet.xlsx are in the same directory.');
                 }
 
                 // Convert to array buffers
@@ -182,14 +254,14 @@
                 const workoutRows = XLSX.utils.sheet_to_json(workoutSheet);
                 const dietRows = XLSX.utils.sheet_to_json(dietSheet);
 
-                // Parse workout data by days
+                // Parse workout data by weeks and days
                 parseWorkoutData(workoutRows);
 
                 // Parse diet data by meals
                 parseDietData(dietRows);
 
                 // Render UI
-                renderDaySelector();
+                renderWeekSelector();
                 renderDietTable();
                 renderHistoryTable();
 
@@ -202,27 +274,35 @@
             }
         }
 
-        // Parse workout data organized by days
+        // Parse workout data organized by weeks and days
         function parseWorkoutData(rows) {
             workoutData = {};
-            let currentDay = null;
 
             rows.forEach((row, index) => {
-                if (row.Day) {
-                    currentDay = row.Day;
-                    // Only create new array if this day doesn't exist yet
-                    if (!workoutData[currentDay]) {
-                        workoutData[currentDay] = [];
-                    }
-                }
+                if (row.Week && row.Day && row.Exercise) {
+                    const week = row.Week;
+                    const day = row.Day;
+                    const focus = row['Workout Focus'];
 
-                if (currentDay && row.Exercise) {
-                    workoutData[currentDay].push({
+                    // Initialize week if not exists
+                    if (!workoutData[week]) {
+                        workoutData[week] = {};
+                    }
+
+                    // Initialize day if not exists
+                    if (!workoutData[week][day]) {
+                        workoutData[week][day] = {
+                            focus: focus,
+                            exercises: []
+                        };
+                    }
+
+                    // Add exercise
+                    workoutData[week][day].exercises.push({
                         exercise: row.Exercise,
                         sets: row.Sets,
                         reps: row.Reps,
-                        weightUsed: row['Weight Used'],
-                        rpe: row.RPE,
+                        progression: row['Progression Rule'],
                         notes: row.Notes
                     });
                 }
@@ -247,14 +327,46 @@
             });
         }
 
-        // Render day selector buttons
-        function renderDaySelector() {
-            const days = Object.keys(workoutData);
-            let html = '';
+        // Render week selector buttons
+        function renderWeekSelector() {
+            const weeks = Object.keys(workoutData).sort();
+            const html = weeks.map(week => 
+                `<button class="btn btn-lg btn-outline-primary" data-week="${escapeHtml(week)}">${week}</button>`
+            ).join('');
 
-            days.forEach(day => {
-                html += `<button class="btn btn-lg btn-outline-primary" onclick="selectDay('${escapeHtml(day)}')">${day}</button>`;
-            });
+            document.getElementById('weekButtons').innerHTML = html;
+        }
+
+        // Select a week
+        function selectWeek(week) {
+            selectedWeek = week;
+            document.getElementById('weekSelector').classList.add('d-none');
+            document.getElementById('daySelector').classList.remove('d-none');
+            document.getElementById('selectedWeekName').textContent = week;
+            renderDaySelector();
+        }
+
+        // Change week selection
+        function changeWeekSelection() {
+            selectedWeek = null;
+            selectedWorkoutDay = null;
+            document.getElementById('weekSelector').classList.remove('d-none');
+            document.getElementById('daySelector').classList.add('d-none');
+            document.getElementById('selectedDay').classList.add('d-none');
+        }
+
+        // Render day selector buttons for selected week
+        function renderDaySelector() {
+            if (!selectedWeek || !workoutData[selectedWeek]) {
+                return;
+            }
+
+            const days = Object.keys(workoutData[selectedWeek]).sort();
+            const html = days.map(day => {
+                return `<button class="btn btn-lg btn-outline-success" data-day="${escapeHtml(day)}">
+                    <strong>${day}</strong>
+                </button>`;
+            }).join('');
 
             document.getElementById('dayButtons').innerHTML = html;
         }
@@ -264,6 +376,7 @@
             selectedWorkoutDay = day;
             document.getElementById('daySelector').classList.add('d-none');
             document.getElementById('selectedDay').classList.remove('d-none');
+            document.getElementById('selectedWeekDisplay').textContent = selectedWeek;
             document.getElementById('selectedDayName').textContent = day;
             renderWorkoutTable();
         }
@@ -277,29 +390,38 @@
 
         // Render workout table for selected day
         function renderWorkoutTable() {
-            if (!selectedWorkoutDay || !workoutData[selectedWorkoutDay]) {
+            if (!selectedWeek || !selectedWorkoutDay || !workoutData[selectedWeek] || !workoutData[selectedWeek][selectedWorkoutDay]) {
                 return;
             }
 
-            const exercises = workoutData[selectedWorkoutDay];
-            let html = '<table class="table table-striped table-hover"><thead class="table-dark"><tr>';
-            html += '<th>Exercise</th><th>Sets</th><th>Reps</th><th>Weight</th><th>RPE</th><th>Done</th><th>Notes</th></tr></thead><tbody>';
-
-            exercises.forEach((exercise, index) => {
-                html += `<tr>
-                    <td><strong>${exercise.exercise}</strong></td>
+            const dayData = workoutData[selectedWeek][selectedWorkoutDay];
+            const exercises = dayData.exercises;
+            
+            const tableRows = exercises.map((exercise, index) => {
+                const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(exercise.exercise + ' exercise')}`;
+                
+                return `<tr>
+                    <td>
+                        <strong>${exercise.exercise}</strong>
+                        <a href="${googleSearchUrl}" target="_blank" rel="noopener noreferrer" 
+                           class="ms-2 text-decoration-none" 
+                           title="Search how to do this exercise">
+                            🔍
+                        </a>
+                    </td>
                     <td>${exercise.sets || '-'}</td>
                     <td>${exercise.reps || '-'}</td>
+                    <td><span class="badge bg-warning text-dark">${exercise.progression || '-'}</span></td>
                     <td>
                         <input type="text" class="form-control form-control-sm"
                                id="weight-${index}"
-                               placeholder="${exercise.weightUsed || 'Enter'}"
+                               placeholder="Enter"
                                style="width: 80px;">
                     </td>
                     <td>
                         <input type="number" class="form-control form-control-sm"
                                id="rpe-${index}"
-                               placeholder="${exercise.rpe || 'RPE'}"
+                               placeholder="RPE"
                                min="1" max="10"
                                style="width: 70px;">
                     </td>
@@ -309,20 +431,30 @@
                     <td>
                         <input type="text" class="form-control form-control-sm"
                                id="note-${index}"
-                               placeholder="Add note...">
+                               placeholder="${exercise.notes || 'Add note...'}">
                     </td>
                 </tr>`;
-            });
+            }).join('');
 
-            html += '</tbody></table>';
+            const html = `<table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Exercise</th><th>Sets</th><th>Reps</th><th>Progression</th>
+                        <th>Weight</th><th>RPE</th><th>Done</th><th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+            </table>`;
+            
             document.getElementById('workoutTable').innerHTML = html;
         }
 
         // Save workout session
         function saveWorkoutSession() {
-            if (!selectedWorkoutDay) return;
+            if (!selectedWeek || !selectedWorkoutDay) return;
 
-            const exercises = workoutData[selectedWorkoutDay];
+            const dayData = workoutData[selectedWeek][selectedWorkoutDay];
+            const exercises = dayData.exercises;
             let completed = 0;
 
             exercises.forEach((exercise, index) => {
@@ -336,10 +468,13 @@
                     const entry = {
                         date: new Date().toISOString(),
                         type: 'workout',
+                        week: selectedWeek,
                         day: selectedWorkoutDay,
+                        focus: dayData.focus,
                         item: exercise.exercise,
                         sets: exercise.sets,
                         reps: exercise.reps,
+                        progression: exercise.progression,
                         weight: weight,
                         rpe: rpe,
                         status: 'completed',
@@ -369,10 +504,30 @@
                 return;
             }
 
-            let html = '';
+            const html = Object.keys(dietData).map(meal => {
+                const rows = dietData[meal].map((option, index) => {
+                    const uniqueId = `${meal.replace(/\s+/g, '')}-${index}`;
+                    return `<tr>
+                        <td><strong>${option.option}</strong></td>
+                        <td><span class="badge bg-info">${option.protein || '-'}g</span></td>
+                        <td><small class="text-muted">${option.notes || '-'}</small></td>
+                        <td>
+                            <input type="checkbox" class="form-check-input"
+                                   data-diet-checkbox
+                                   data-meal="${meal}"
+                                   data-option="${escapeHtml(option.option)}"
+                                   data-protein="${option.protein}"
+                                   data-unique-id="${uniqueId}">
+                        </td>
+                        <td>
+                            <input type="text" class="form-control form-control-sm"
+                                   id="diet-note-${uniqueId}"
+                                   placeholder="Add note...">
+                        </td>
+                    </tr>`;
+                }).join('');
 
-            Object.keys(dietData).forEach(meal => {
-                html += `<div class="card mb-3">
+                return `<div class="card mb-3">
                     <div class="card-header bg-success text-white">
                         <h5 class="mb-0">${meal}</h5>
                     </div>
@@ -387,28 +542,11 @@
                                     <th>My Notes</th>
                                 </tr>
                             </thead>
-                            <tbody>`;
-
-                dietData[meal].forEach((option, index) => {
-                    const uniqueId = `${meal.replace(/\s+/g, '')}-${index}`;
-                    html += `<tr>
-                        <td><strong>${option.option}</strong></td>
-                        <td><span class="badge bg-info">${option.protein || '-'}g</span></td>
-                        <td><small class="text-muted">${option.notes || '-'}</small></td>
-                        <td>
-                            <input type="checkbox" class="form-check-input"
-                                   onchange="markDietComplete('${meal}', '${escapeHtml(option.option)}', '${option.protein}', this, '${uniqueId}')">
-                        </td>
-                        <td>
-                            <input type="text" class="form-control form-control-sm"
-                                   id="diet-note-${uniqueId}"
-                                   placeholder="Add note...">
-                        </td>
-                    </tr>`;
-                });
-
-                html += `</tbody></table></div></div>`;
-            });
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>`;
+            }).join('');
 
             document.getElementById('dietTable').innerHTML = html;
         }
@@ -443,25 +581,23 @@
         }
 
         // Filter history
-        function filterHistory(filter) {
+        function filterHistory(filter, targetButton) {
             currentHistoryFilter = filter;
 
             // Update button states
-            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+            document.querySelectorAll('#historyFilterButtons .btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            targetButton.classList.add('active');
 
             renderHistoryTable();
         }
 
         // Render history table
         function renderHistoryTable() {
-            let filteredLog = completionLog;
-
-            if (currentHistoryFilter !== 'all') {
-                filteredLog = completionLog.filter(entry => entry.type === currentHistoryFilter);
-            }
+            const filteredLog = currentHistoryFilter === 'all' 
+                ? completionLog 
+                : completionLog.filter(entry => entry.type === currentHistoryFilter);
 
             if (filteredLog.length === 0) {
                 document.getElementById('historyTable').innerHTML = '<p class="text-muted">No history yet. Start tracking!</p>';
@@ -471,10 +607,7 @@
             // Sort by date (newest first)
             const sortedLog = [...filteredLog].sort((a, b) => b.timestamp - a.timestamp);
 
-            let html = '<table class="table table-striped table-sm"><thead class="table-dark"><tr>';
-            html += '<th>Date</th><th>Type</th><th>Day/Meal</th><th>Item</th><th>Details</th><th>Notes</th></tr></thead><tbody>';
-
-            sortedLog.forEach(entry => {
+            const tableRows = sortedLog.map(entry => {
                 const date = new Date(entry.date).toLocaleString('en-US', {
                     month: 'short',
                     day: 'numeric',
@@ -487,21 +620,37 @@
                     details = `${entry.sets || '-'} x ${entry.reps || '-'}`;
                     if (entry.weight) details += ` @ ${entry.weight}`;
                     if (entry.rpe) details += ` RPE${entry.rpe}`;
+                    if (entry.progression) details += ` | ${entry.progression}`;
                 } else if (entry.type === 'diet') {
                     details = entry.protein ? `${entry.protein}g protein` : '-';
                 }
 
-                html += `<tr>
+                const weekDisplay = entry.week || '-';
+                const dayMealDisplay = entry.type === 'workout' 
+                    ? `${entry.day || '-'}${entry.focus ? ' (' + entry.focus + ')' : ''}`
+                    : entry.meal || '-';
+
+                return `<tr>
                     <td><small>${date}</small></td>
                     <td><span class="badge bg-${entry.type === 'workout' ? 'primary' : 'success'}">${entry.type}</span></td>
-                    <td><small>${entry.day || entry.meal || '-'}</small></td>
+                    <td><small>${weekDisplay}</small></td>
+                    <td><small>${dayMealDisplay}</small></td>
                     <td><strong>${entry.item}</strong></td>
                     <td><small>${details}</small></td>
                     <td><small>${entry.notes || '-'}</small></td>
                 </tr>`;
-            });
+            }).join('');
 
-            html += '</tbody></table>';
+            const html = `<table class="table table-striped table-sm">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Date</th><th>Type</th><th>Week</th><th>Day/Meal</th>
+                        <th>Item</th><th>Details</th><th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+            </table>`;
+            
             document.getElementById('historyTable').innerHTML = html;
         }
 
@@ -526,19 +675,22 @@
             }
 
             // CSV headers
-            let csv = 'Date,Type,Day/Meal,Exercise/Food,Sets,Reps,Weight,RPE,Protein,Status,Notes\n';
+            let csv = 'Date,Type,Week,Day/Meal,Focus,Exercise/Food,Sets,Reps,Progression,Weight,RPE,Protein,Status,Notes\n';
 
             // Add data rows
             completionLog.forEach(entry => {
                 const date = new Date(entry.date).toLocaleString('en-US');
+                const week = entry.week || '';
                 const dayMeal = entry.day || entry.meal || '';
+                const focus = entry.focus || '';
                 const sets = entry.sets || '';
                 const reps = entry.reps || '';
+                const progression = entry.progression || '';
                 const weight = entry.weight || '';
                 const rpe = entry.rpe || '';
                 const protein = entry.protein || '';
 
-                csv += `"${date}","${entry.type}","${dayMeal}","${entry.item}","${sets}","${reps}","${weight}","${rpe}","${protein}","${entry.status}","${entry.notes || ''}"\n`;
+                csv += `"${date}","${entry.type}","${week}","${dayMeal}","${focus}","${entry.item}","${sets}","${reps}","${progression}","${weight}","${rpe}","${protein}","${entry.status}","${entry.notes || ''}"\n`;
             });
 
             // Create download link
