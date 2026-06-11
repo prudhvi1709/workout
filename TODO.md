@@ -36,7 +36,9 @@ here (public repo) - real numbers live in Supabase + the local seed.
 - [ ] Workout history view (past sessions, per-exercise load/volume trend, PRs).
 - [ ] Block / phase rotation: deload + exercise swaps after ~4-6 weeks (a "new block"
       action rather than hand-editing SQL).
-- [ ] Partner read-only view (toggle to see the other user's dashboard).
+- [x] Partner read-only view: Me/partner toggle on the Dashboard (read-only),
+      shows the partner's 7-day avg, goal progress, weight trend, and today's
+      nutrition vs target. Writes stay self-only (form hidden + RLS owner-only).
 - [ ] Profile / goals editing UI (currently set only via the seed).
 - [ ] Body-composition chart (waist, body-fat over time).
 
