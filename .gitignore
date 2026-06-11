@@ -1,0 +1,22 @@
+node_modules
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+
+# Playwright
+test-results/
+playwright-report/
+.playwright/
+
+# Private filled-in SQL (real UUIDs + personal data) - never commit.
+*.local.sql
+
+# Archived prototype contains personal data (name in filename, workout/diet
+# spreadsheets). Kept locally for reference, excluded from the public repo.
+legacy/
