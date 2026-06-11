@@ -14,7 +14,9 @@ test-results/
 playwright-report/
 .playwright/
 
-# Private filled-in SQL (real UUIDs + personal data) - never commit.
+# Supabase SQL (schema + seeds) kept locally only, not committed - run by hand
+# in the SQL Editor. *.local.sql (real UUIDs + personal data) was never committed.
+supabase/
 *.local.sql
 
 # Archived prototype contains personal data (name in filename, workout/diet

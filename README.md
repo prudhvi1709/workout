@@ -26,18 +26,18 @@ boot by design.
 
 ## Supabase setup (once)
 
+The schema and seed SQL live in `supabase/migrations/` **locally only** - the
+folder is gitignored, so none of it (not even the PII-free template) ships in
+this public repo. Keep your copies on disk.
+
 1. Create a project at <https://supabase.com>.
-2. **SQL Editor**: run `supabase/migrations/0001_init.sql` (schema + RLS + grants).
+2. **SQL Editor**: run `0001_init.sql` (schema + RLS + grants).
 3. **Authentication > Providers > Email**: turn **off** "Enable signup" (no
    public registration; accounts are created by hand).
 4. **Authentication > Users > Add user**: create the two accounts (real emails,
    passwords, marked confirmed).
-5. Seed profiles + program privately:
-   ```sh
-   cp supabase/migrations/0002_seed.example.sql supabase/migrations/0002_seed.local.sql
-   ```
-   Edit the `*.local.sql` copy with real UUIDs/values and run it in the SQL
-   Editor. `*.local.sql` is gitignored.
+5. Fill `0002_seed.local.sql` with real UUIDs/values and run it in the SQL
+   Editor (`0002_seed.example.sql` is the PII-free template to copy from).
 
 ## Deploy to GitHub Pages
 

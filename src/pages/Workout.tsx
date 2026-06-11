@@ -3,12 +3,16 @@ import { useAuth } from "../auth/AuthContext";
 import { Layout } from "../components/Layout";
 import { Button, Card, Input } from "../components/ui";
 import { useProgram, type ProgramDay } from "../features/workout/useProgram";
+import { useLastPerformance } from "../features/workout/useLastPerformance";
+import { exerciseWhy } from "../features/workout/exerciseInfo";
+import { progressionHint, repRangeTop, type LastPerformance } from "../features/workout/progression";
 import { supabase } from "../lib/supabase";
 import { todayISO } from "../lib/date";
 
 interface SetRow {
   exercise_name: string;
   target: string; // e.g. "3x10"
+  targetRepsTop: number | null; // top of the rep range, for the progression hint
   weight: string;
   sets: string;
   reps: string;
@@ -16,24 +20,31 @@ interface SetRow {
   notes: string;
 }
 
-function rowsFromDay(day: ProgramDay): SetRow[] {
-  return day.exercises.map((ex) => ({
-    exercise_name: ex.exercise_name,
-    target:
-      ex.target_sets != null && ex.target_reps
-        ? `${ex.target_sets}x${ex.target_reps}`
-        : (ex.target_reps ?? "-"),
-    weight: "",
-    sets: ex.target_sets != null ? String(ex.target_sets) : "",
-    reps: "",
-    rir: "",
-    notes: "",
-  }));
+function rowsFromDay(day: ProgramDay, last: Map<string, LastPerformance>): SetRow[] {
+  return day.exercises.map((ex) => {
+    const prev = last.get(ex.exercise_name);
+    return {
+      exercise_name: ex.exercise_name,
+      target:
+        ex.target_sets != null && ex.target_reps
+          ? `${ex.target_sets}x${ex.target_reps}`
+          : (ex.target_reps ?? "-"),
+      targetRepsTop: repRangeTop(ex.target_reps),
+      // Prefill last session's weight as a convenience; the human decides whether
+      // to bump it (advisory progression, not auto-applied).
+      weight: prev?.weightKg != null ? String(prev.weightKg) : "",
+      sets: ex.target_sets != null ? String(ex.target_sets) : "",
+      reps: "",
+      rir: "",
+      notes: "",
+    };
+  });
 }
 
 export function Workout() {
   const { user } = useAuth();
   const { days, loading } = useProgram(user?.id);
+  const lastByExercise = useLastPerformance(user?.id);
 
   const [selected, setSelected] = useState<ProgramDay | null>(null);
   const [rows, setRows] = useState<SetRow[]>([]);
@@ -46,7 +57,7 @@ export function Workout() {
 
   function pickDay(day: ProgramDay) {
     setSelected(day);
-    setRows(rowsFromDay(day));
+    setRows(rowsFromDay(day, lastByExercise));
     setSaved(null);
     setError(null);
   }
@@ -160,7 +171,10 @@ export function Workout() {
           </Card>
 
           <div className="space-y-3">
-            {rows.map((r, i) => (
+            {rows.map((r, i) => {
+              const why = exerciseWhy(r.exercise_name);
+              const hint = progressionHint(r.targetRepsTop, lastByExercise.get(r.exercise_name));
+              return (
               <Card key={`${r.exercise_name}-${i}`} className="space-y-3">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="flex items-center gap-2 font-medium text-slate-100">
@@ -180,6 +194,8 @@ export function Workout() {
                     {r.target}
                   </span>
                 </div>
+                {why && <p className="text-xs leading-snug text-slate-400">{why}</p>}
+                {hint && <p className="text-xs text-emerald-300/90">{hint}</p>}
                 <div className="grid grid-cols-4 gap-2">
                   <LabeledInput label="kg" value={r.weight} onChange={(v) => update(i, "weight", v)} />
                   <LabeledInput label="sets" value={r.sets} onChange={(v) => update(i, "sets", v)} />
@@ -192,7 +208,8 @@ export function Workout() {
                   onChange={(e) => update(i, "notes", e.target.value)}
                 />
               </Card>
-            ))}
+              );
+            })}
           </div>
 
           {error && <p className="text-sm text-rose-400">{error}</p>}
