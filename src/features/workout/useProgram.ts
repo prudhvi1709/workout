@@ -7,13 +7,6 @@ export interface ProgramDay {
   exercises: ProgramTemplate[];
 }
 
-// Order days by their weekday prefix (Mon..Sun) rather than alphabetically.
-const WEEKDAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-function dayRank(label: string): number {
-  const idx = WEEKDAY_ORDER.indexOf(label.slice(0, 3));
-  return idx === -1 ? 99 : idx;
-}
-
 /** Loads the seeded program (keyed by user_id) for the given user. */
 export function useProgram(userId: string | undefined) {
   const [days, setDays] = useState<ProgramDay[]>([]);
@@ -28,6 +21,8 @@ export function useProgram(userId: string | undefined) {
       .from("program_templates")
       .select("*")
       .eq("user_id", userId)
+      // Global ascending position defines both the day order and the exercise
+      // order within each day; Map preserves first-seen key order.
       .order("position", { ascending: true })
       .then(({ data }) => {
         if (!active) return;
@@ -37,9 +32,10 @@ export function useProgram(userId: string | undefined) {
           list.push(row);
           byDay.set(row.day_label, list);
         }
-        const grouped: ProgramDay[] = [...byDay.entries()]
-          .map(([dayLabel, exercises]) => ({ dayLabel, exercises }))
-          .sort((a, b) => dayRank(a.dayLabel) - dayRank(b.dayLabel));
+        const grouped: ProgramDay[] = [...byDay.entries()].map(([dayLabel, exercises]) => ({
+          dayLabel,
+          exercises,
+        }));
         setDays(grouped);
         setLoading(false);
       });

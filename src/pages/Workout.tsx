@@ -37,6 +37,9 @@ export function Workout() {
 
   const [selected, setSelected] = useState<ProgramDay | null>(null);
   const [rows, setRows] = useState<SetRow[]>([]);
+  // The date the workout was actually done (default today, editable) so past
+  // sessions can be backfilled.
+  const [sessionDate, setSessionDate] = useState(todayISO());
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +72,7 @@ export function Workout() {
 
     const { data: session, error: sErr } = await supabase
       .from("workout_sessions")
-      .insert({ user_id: user.id, session_date: todayISO(), day_label: selected.dayLabel })
+      .insert({ user_id: user.id, session_date: sessionDate, day_label: selected.dayLabel })
       .select("id")
       .single();
 
@@ -111,7 +114,7 @@ export function Workout() {
       {!selected && (
         <Card>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-300">
-            Pick today's session
+            Pick a session
           </h2>
           {loading && <p className="text-sm text-slate-500">Loading program...</p>}
           {!loading && days.length === 0 && (
@@ -136,18 +139,43 @@ export function Workout() {
 
       {selected && (
         <>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-slate-100">{selected.dayLabel}</h2>
             <Button variant="ghost" onClick={() => setSelected(null)}>
               Back
             </Button>
           </div>
 
+          <Card className="flex items-center gap-3">
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              Workout date
+            </span>
+            <input
+              type="date"
+              value={sessionDate}
+              max={todayISO()}
+              onChange={(e) => setSessionDate(e.target.value)}
+              className="rounded-lg bg-slate-900/70 px-3 py-2 text-slate-100 ring-1 ring-slate-700 outline-none focus:ring-2 focus:ring-emerald-400"
+            />
+          </Card>
+
           <div className="space-y-3">
             {rows.map((r, i) => (
               <Card key={`${r.exercise_name}-${i}`} className="space-y-3">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-medium text-slate-100">{r.exercise_name}</span>
+                  <span className="flex items-center gap-2 font-medium text-slate-100">
+                    {r.exercise_name}
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent(`how to do ${r.exercise_name} exercise`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`Search "${r.exercise_name}"`}
+                      aria-label={`Search how to do ${r.exercise_name}`}
+                      className="rounded-md bg-slate-700/60 px-2 py-0.5 text-xs text-sky-300 transition active:bg-slate-700"
+                    >
+                      🔍 how
+                    </a>
+                  </span>
                   <span className="shrink-0 rounded-md bg-amber-500/15 px-2 py-0.5 text-xs text-amber-300">
                     {r.target}
                   </span>
