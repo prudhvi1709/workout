@@ -20,8 +20,10 @@ here (public repo) - real numbers live in Supabase + the local seed.
       body (weight, waist, body-fat), nutrition (calories, protein, carbs, fat,
       water), activity (steps, cardio_min, bike_commute, swimming), recovery
       (sleep_hours, sleep_quality, energy_score), notes.
-- [ ] **Nutrition targets + tracking.** Per-user calorie + protein targets (scale
-      protein to fat-free mass / target weight, not scale weight). Show intake vs target.
+- [x] **Nutrition targets + tracking.** Per-user calorie + protein targets on
+      `profiles` (`calorie_target`, `protein_target_g`; migration `0003`). Daily
+      page shows live intake vs target (calories = ceiling, protein = floor).
+      Targets set per user: ~2000/150 g and ~1600/105 g (in the local seed).
 - [ ] **Weekly review screen.** Rolling-avg delta vs target rate, avg calories/protein
       vs target, training days hit, avg sleep/energy - one place that drives decisions.
 - [ ] **Analytics / alerts engine** (pure fns in `src/lib`): weight plateau (rolling

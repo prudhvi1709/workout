@@ -4,6 +4,8 @@ import { Layout } from "../components/Layout";
 import { Button, Card, Field, Input } from "../components/ui";
 import { supabase } from "../lib/supabase";
 import { todayISO } from "../lib/date";
+import { useProfile } from "../lib/useProfile";
+import { NutritionProgress } from "../features/nutrition/NutritionProgress";
 
 // The form mirrors the editable columns of daily_logs. Everything is a string
 // while editing (empty = "not logged"); booleans are real booleans.
@@ -64,9 +66,16 @@ function parseScore(value: string): number | null | undefined {
   return n;
 }
 
+/** A live (possibly-invalid) numeric field as a number for display; null otherwise. */
+function liveNum(value: string): number | null {
+  const n = parseNum(value, { integer: true });
+  return typeof n === "number" ? n : null;
+}
+
 export function Daily() {
   const { user } = useAuth();
   const userId = user?.id;
+  const { profile } = useProfile(userId);
   const [date, setDate] = useState(todayISO());
   const [form, setForm] = useState<FormState>(EMPTY);
   const [status, setStatus] = useState<"idle" | "loading" | "saving" | "saved" | "error">("idle");
@@ -194,6 +203,13 @@ export function Daily() {
           <NumField label="Fat (g)" value={form.fat_g} integer placeholder="60" onChange={(v) => set("fat_g", v)} />
           <NumField label="Water (L)" value={form.water_l} step="0.1" placeholder="3.0" onChange={(v) => set("water_l", v)} />
         </Section>
+
+        <NutritionProgress
+          calories={liveNum(form.calories)}
+          calorieTarget={profile?.calorie_target ?? null}
+          protein={liveNum(form.protein_g)}
+          proteinTarget={profile?.protein_target_g ?? null}
+        />
 
         <Section title="Activity">
           <NumField label="Steps" value={form.steps} integer placeholder="9000" onChange={(v) => set("steps", v)} />

@@ -17,6 +17,8 @@ export type Profile = {
   goal_weight_kg: number | null;
   birthday_goal_weight_kg: number | null;
   goal_date: string | null; // ISO date
+  calorie_target: number | null; // daily kcal target
+  protein_target_g: number | null; // daily protein target (g)
   created_at: string;
 };
 
