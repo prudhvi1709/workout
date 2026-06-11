@@ -40,10 +40,10 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
-export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
+export function Input({ className = "", ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className="w-full rounded-xl bg-slate-900/70 px-3 py-2.5 text-slate-100 ring-1 ring-slate-700 outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-400"
+      className={`w-full rounded-xl bg-slate-900/70 px-3 py-2.5 text-slate-100 ring-1 ring-slate-700 outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-400 ${className}`}
       {...props}
     />
   );

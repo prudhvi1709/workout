@@ -4,6 +4,11 @@
 // so "Leg Press (high foot)" reuses the "Leg Press" entry if no exact match.
 
 const INFO: Record<string, string> = {
+  // Session bookends
+  "Warm-up":
+    "10 min easy incline walk - raises temperature and blood flow so the working sets feel smoother and the joints are primed. Keep it light, not tiring.",
+  "Cool-down + stretch":
+    "A few minutes of easy stretching to release tension and start recovery - then take your post-workout body weight.",
   // Prudhvi - upper
   "Barbell Bench Press":
     "Free-bar pressing rebuilds your chest, shoulders and triceps and your old pressing strength - the stabilizer demand carries straight over to real strength.",

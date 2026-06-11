@@ -66,9 +66,14 @@ export function LogWeight({ userId, onSaved }: Props) {
 
   return (
     <Card>
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-300">
-        Morning weigh-in
+      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-300">
+        Body weight
       </h2>
+      <p className="mb-3 text-xs leading-snug text-slate-400">
+        Weigh at the same point every time (post-workout, a few minutes after
+        cooling down). Consistent timing is what keeps the 7-day average
+        comparable - the trend matters more than any single reading.
+      </p>
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
         <div className="w-36">
           <Field label="Date">

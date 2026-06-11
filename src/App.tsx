@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
 import { Login } from "./auth/Login";
 import { Dashboard } from "./pages/Dashboard";
+import { Daily } from "./pages/Daily";
 import { Workout } from "./pages/Workout";
 
 export function App() {
@@ -20,6 +21,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
+      <Route path="/daily" element={<Daily />} />
       <Route path="/workout" element={<Workout />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
