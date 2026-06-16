@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { Layout } from "../components/Layout";
-import { Button, Card, Input } from "../components/ui";
+import { Button, Card, Field, Input } from "../components/ui";
 import { useProgram, type ProgramDay } from "../features/workout/useProgram";
 import { useLastPerformance } from "../features/workout/useLastPerformance";
 import { exerciseWhy } from "../features/workout/exerciseInfo";
@@ -51,6 +51,9 @@ export function Workout() {
   // The date the workout was actually done (default today, editable) so past
   // sessions can be backfilled.
   const [sessionDate, setSessionDate] = useState(todayISO());
+  // One free-text box for the whole session (saved to workout_sessions.notes),
+  // separate from the per-exercise notes on each card.
+  const [sessionNotes, setSessionNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +61,7 @@ export function Workout() {
   function pickDay(day: ProgramDay) {
     setSelected(day);
     setRows(rowsFromDay(day, lastByExercise));
+    setSessionNotes("");
     setSaved(null);
     setError(null);
   }
@@ -83,7 +87,12 @@ export function Workout() {
 
     const { data: session, error: sErr } = await supabase
       .from("workout_sessions")
-      .insert({ user_id: user.id, session_date: sessionDate, day_label: selected.dayLabel })
+      .insert({
+        user_id: user.id,
+        session_date: sessionDate,
+        day_label: selected.dayLabel,
+        notes: sessionNotes.trim() || null,
+      })
       .select("id")
       .single();
 
@@ -114,6 +123,7 @@ export function Workout() {
     setSaved(`Logged ${toLog.length} exercise(s).`);
     setSelected(null);
     setRows([]);
+    setSessionNotes("");
   }
 
   return (
@@ -168,6 +178,18 @@ export function Workout() {
               onChange={(e) => setSessionDate(e.target.value)}
               className="rounded-lg bg-slate-900/70 px-3 py-2 text-slate-100 ring-1 ring-slate-700 outline-none focus:ring-2 focus:ring-emerald-400"
             />
+          </Card>
+
+          <Card>
+            <Field label="Session notes">
+              <textarea
+                value={sessionNotes}
+                onChange={(e) => setSessionNotes(e.target.value)}
+                placeholder="Anything about today's session - energy, crowd, pain, wins..."
+                rows={3}
+                className="w-full resize-y rounded-xl bg-slate-900/70 px-3 py-2.5 text-slate-100 ring-1 ring-slate-700 outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-400"
+              />
+            </Field>
           </Card>
 
           <div className="space-y-3">
