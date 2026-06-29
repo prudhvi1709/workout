@@ -4,6 +4,7 @@ import { Login } from "./auth/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { Daily } from "./pages/Daily";
 import { Workout } from "./pages/Workout";
+import { Progress } from "./pages/Progress";
 
 export function App() {
   const { session, loading } = useAuth();
@@ -23,6 +24,7 @@ export function App() {
       <Route path="/" element={<Dashboard />} />
       <Route path="/daily" element={<Daily />} />
       <Route path="/workout" element={<Workout />} />
+      <Route path="/progress" element={<Progress />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

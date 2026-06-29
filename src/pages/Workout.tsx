@@ -192,6 +192,8 @@ export function Workout() {
             </Field>
           </Card>
 
+          {selected.exercises.some((e) => e.target_sets != null) && <IntensityCard />}
+
           <div className="space-y-3">
             {rows.map((r, i) => {
               const why = exerciseWhy(r.exercise_name);
@@ -249,6 +251,34 @@ export function Workout() {
         </>
       )}
     </Layout>
+  );
+}
+
+// Phase-2 run-protocol shown on lifting days. The intensity lives in HOW the
+// session is run (effort + density), not in extra sets - this keeps it in front
+// of you mid-workout.
+function IntensityCard() {
+  const RULES = [
+    "Last 1-2 sets of each lift to RIR 1 - about 1 rep left, not 4-5. Log the RIR.",
+    "Rest 60-90s on accessories, ~2 min on the big compounds.",
+    "Lower the weight under control (2-3s down) - kills momentum, multiplies effort.",
+    "Superset the accessory pairs: back-to-back, minimal rest.",
+    "Finish with one all-out burnout / drop set on the last move.",
+  ];
+  return (
+    <Card className="border border-amber-500/30 bg-amber-500/5">
+      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-amber-300">
+        How to run today
+      </h2>
+      <ul className="space-y-1.5">
+        {RULES.map((rule) => (
+          <li key={rule} className="flex items-start gap-2 text-xs leading-snug text-slate-200">
+            <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+            <span>{rule}</span>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 

@@ -6,7 +6,9 @@
 const INFO: Record<string, string> = {
   // Session bookends
   "Warm-up":
-    "10 min easy incline walk - raises temperature and blood flow so the working sets feel smoother and the joints are primed. Keep it light, not tiring.",
+    "A few minutes of dynamic warm-up drills plus ramp-up sets on the first lift - raises temperature and primes the joints so the heavy working sets feel smoother. Keep it light, not tiring.",
+  "Incline Walk":
+    "Steady Zone-2 incline walking at a conversational pace - burns fat with near-zero recovery cost, so it adds to the deficit without taxing your legs or your heavy sets. Done post-workout it keeps you fresh for the lifting.",
   "Cool-down + stretch":
     "A few minutes of easy stretching to release tension and start recovery - then take your post-workout body weight.",
   // Prudhvi - upper
@@ -32,6 +34,13 @@ const INFO: Record<string, string> = {
     "Hits the rear delts for rounded shoulders and better posture.",
   "Hammer Curl":
     "Builds the biceps and forearms for thicker arms.",
+  // Prudhvi - conditioning + arms
+  "EZ-Bar Curl":
+    "Direct biceps work; the angled bar sits easier on the wrists than a straight bar. Keeps the arms full as you lean out.",
+  "Overhead Triceps Extension":
+    "Loads the long head of the triceps in a stretch - the part that adds size to the back of the arm.",
+  "Hanging Knee Raise":
+    "Trains the lower abs while a dead hang decompresses the spine - core work that's friendly to a sitting-aggravated back.",
   // Prudhvi - legs / back-sparing
   "Leg Press":
     "Builds quads and glutes with your back fully supported - no spinal load.",
